@@ -29,23 +29,15 @@ public:
         scopes.back()[name] = value;
     }
 
-    bool lookup(const string& name, long long& value) {
+    bool get(const string& name, long long& value) {
         for (int i = scopes.size() - 1; i >= 0; i--) {
-            if (scopes[i].find(name) != scopes[i].end()) {
-                value = scopes[i][name];
+            auto it = scopes[i].find(name);
+            if (it != scopes[i].end()) {
+                value = it->second;
                 return true;
             }
         }
         return false;
-    }
-
-    void print(const string& name) {
-        long long value;
-        if (lookup(name, value)) {
-            cout << value << endl;
-        } else {
-            cout << "UNDEFINED" << endl;
-        }
     }
 };
 
@@ -53,29 +45,54 @@ int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(NULL);
 
+    int n;
+    if (!(cin >> n)) {
+        return 0;
+    }
+    cin.ignore();
+
     ScopeManager sm;
-    string line;
 
-    while (getline(cin, line)) {
-        if (line.empty()) continue;
+    for (int i = 0; i < n; i++) {
+        string line;
+        if (!getline(cin, line)) break;
 
-        istringstream iss(line);
-        string cmd;
-        iss >> cmd;
+        // Trim
+        size_t start = line.find_first_not_of(" \t");
+        if (start == string::npos) continue;
+        line = line.substr(start);
 
-        if (cmd == "{") {
+        if (line[0] == '{') {
             sm.enterScope();
-        } else if (cmd == "}") {
+        } else if (line[0] == '}') {
             sm.exitScope();
-        } else if (cmd == "DECLARE" || cmd == "declare") {
-            string name;
-            long long value;
-            iss >> name >> value;
-            sm.declare(name, value);
-        } else if (cmd == "PRINT" || cmd == "print") {
-            string name;
-            iss >> name;
-            sm.print(name);
+        } else if (line.find("int ") == 0) {
+            // Parse: int x = value
+            size_t eqPos = line.find('=');
+            if (eqPos != string::npos) {
+                string namePart = line.substr(4, eqPos - 4);
+                // Trim name
+                size_t ns = namePart.find_first_not_of(" \t");
+                size_t ne = namePart.find_last_not_of(" \t");
+                string name = namePart.substr(ns, ne - ns + 1);
+
+                string valuePart = line.substr(eqPos + 1);
+                long long value = stoll(valuePart);
+                sm.declare(name, value);
+            }
+        } else if (line.find("print(") == 0) {
+            // Parse: print(x)
+            size_t start = line.find('(');
+            size_t end = line.find(')');
+            if (start != string::npos && end != string::npos) {
+                string name = line.substr(start + 1, end - start - 1);
+                long long value;
+                if (sm.get(name, value)) {
+                    cout << value << endl;
+                } else {
+                    cout << 0 << endl;
+                }
+            }
         }
     }
 
