@@ -2,22 +2,21 @@
 #include <string>
 #include <map>
 #include <vector>
-#include <stack>
 #include <sstream>
 
 using namespace std;
 
 class ScopeManager {
 private:
-    vector<map<string, int>> scopes;
+    vector<map<string, long long>> scopes;
 
 public:
     ScopeManager() {
-        scopes.push_back(map<string, int>());
+        scopes.push_back(map<string, long long>());
     }
 
     void enterScope() {
-        scopes.push_back(map<string, int>());
+        scopes.push_back(map<string, long long>());
     }
 
     void exitScope() {
@@ -26,11 +25,11 @@ public:
         }
     }
 
-    void set(const string& name, int value) {
+    void declare(const string& name, long long value) {
         scopes.back()[name] = value;
     }
 
-    bool get(const string& name, int& value) {
+    bool lookup(const string& name, long long& value) {
         for (int i = scopes.size() - 1; i >= 0; i--) {
             if (scopes[i].find(name) != scopes[i].end()) {
                 value = scopes[i][name];
@@ -39,35 +38,44 @@ public:
         }
         return false;
     }
+
+    void print(const string& name) {
+        long long value;
+        if (lookup(name, value)) {
+            cout << value << endl;
+        } else {
+            cout << "UNDEFINED" << endl;
+        }
+    }
 };
 
 int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
     ScopeManager sm;
     string line;
 
     while (getline(cin, line)) {
+        if (line.empty()) continue;
+
         istringstream iss(line);
         string cmd;
         iss >> cmd;
 
-        if (cmd == "enter") {
+        if (cmd == "{") {
             sm.enterScope();
-        } else if (cmd == "exit") {
+        } else if (cmd == "}") {
             sm.exitScope();
-        } else if (cmd == "set") {
+        } else if (cmd == "DECLARE" || cmd == "declare") {
             string name;
-            int value;
+            long long value;
             iss >> name >> value;
-            sm.set(name, value);
-        } else if (cmd == "get") {
+            sm.declare(name, value);
+        } else if (cmd == "PRINT" || cmd == "print") {
             string name;
             iss >> name;
-            int value;
-            if (sm.get(name, value)) {
-                cout << value << endl;
-            } else {
-                cout << "undefined" << endl;
-            }
+            sm.print(name);
         }
     }
 
